@@ -6,7 +6,16 @@ const Farm = require("./models/Farm");
 const axios = require("axios");
 
 const app = express();
-app.use(cors({ origin: "http://localhost:3000" }));
+const allowedOrigins = [
+  'http://localhost:3000', // local React
+  'https://precision-farming-dashboard.vercel.app' // production
+];
+
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
 
 // 🔗 MongoDB connection

@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from "react";
 
+// Backend URL from environment variable (works on Vercel)
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8888";
+
 function App() {
   const [activeTab, setActiveTab] = useState("form");
   const [formData, setFormData] = useState({
@@ -22,9 +25,10 @@ function App() {
   const soilTypes = ["Sandy", "Clayey", "Loamy", "Silty", "Peaty"];
   const sprayTypes = ["Fertilizer", "Pesticide", "Herbicide", "Micronutrient Mix"];
 
+  // Fetch farms from backend
   const fetchFarms = async () => {
     try {
-      const res = await fetch("http://localhost:8888/api/farms");
+      const res = await fetch(`${API_BASE}/api/farms`);
       const data = await res.json();
       setFarms(data);
     } catch (err) {
@@ -56,7 +60,7 @@ function App() {
         wind: Number(formData.wind),
       };
 
-      const res = await fetch("http://localhost:8888/api/farms", {
+      const res = await fetch(`${API_BASE}/api/farms`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -101,7 +105,7 @@ function App() {
         rainfall: Number(formData.rainfall),
         wind: Number(formData.wind),
       };
-      const res = await fetch(`http://localhost:8888/api/farms/${formData._id}`, {
+      const res = await fetch(`${API_BASE}/api/farms/${formData._id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
@@ -132,7 +136,7 @@ function App() {
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this farm?")) return;
     try {
-      await fetch(`http://localhost:8888/api/farms/${id}`, { method: "DELETE" });
+      await fetch(`${API_BASE}/api/farms/${id}`, { method: "DELETE" });
       setFarms(farms.filter(f => f._id !== id));
     } catch (err) {
       console.error(err);
@@ -158,7 +162,7 @@ function App() {
 
   const handleSendData = async (farm) => {
     try {
-      const res = await fetch("http://localhost:8888/api/sendout", {
+      const res = await fetch(`${API_BASE}/api/sendout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ farmId: farm._id }),

@@ -93,6 +93,7 @@ app.get("/api/farms/:id", async (req, res) => {
 
 const axios = require("axios"); // npm install axios
 
+// ✅ Replace /api/sendout with this
 app.post("/api/sendout", async (req, res) => {
   try {
     const { farmId } = req.body;
@@ -101,29 +102,29 @@ app.post("/api/sendout", async (req, res) => {
     const farm = await Farm.findById(farmId);
     if (!farm) return res.status(404).json({ error: "Farm not found" });
 
-    // Send farm data to your backend URL (or MATLAB endpoint)
-    const backendUrl = "https://precision-farming-dashboard-2.onrender.com/api/matlab-results";
+    // Instead of sending to external backend, push locally
+    const updatedFarm = await Farm.findByIdAndUpdate(
+      farmId,
+      {
+        $set: {
+          pushedPayload: {
+            data: farm.toObject(),
+            createdAt: new Date(),
+            readByMatlab: false,
+          },
+        },
+      },
+      { new: true }
+    );
 
-    const response = await axios.post(backendUrl, {
-      farmId: farm._id,
-      length: farm.length,
-      width: farm.width,
-      farmingStyle: farm.farmingStyle,
-      farmType: farm.farmType,
-      soilType: farm.soilType,
-      temperature: farm.temperature,
-      humidity: farm.humidity,
-      rainfall: farm.rainfall,
-      wind: farm.wind,
-      sprayType: farm.sprayType,
-    });
-
-    res.json({ message: "Farm data sent successfully!", sentData: farm });
+    console.log("📤 Farm payload queued for MATLAB:", updatedFarm.pushedPayload);
+    res.json({ message: "Farm data queued successfully!", sentData: updatedFarm });
   } catch (err) {
     console.error("❌ Error sending farm data:", err.message);
     res.status(500).json({ error: "Failed to send farm data" });
   }
 });
+
 
 
 /* =========================================================
@@ -187,6 +188,86 @@ app.get("/api/farms/:id/matlab-results", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch MATLAB results" });
   }
 });
+
+
+// ✅ MATLAB polling endpoint
+app.get("/api/poll-json", async (req, res) => {
+  try {
+    // Find any farm where MATLAB hasn’t yet read the payload
+    const farm = await Farm.findOne({ "pushedPayload.readByMatlab": false });
+
+    if (!farm || !farm.pushedPayload) {
+      return res.json({ message: "No new payloads" });
+    }
+
+    // Mark as read
+    farm.pushedPayload.readByMatlab = true;
+    await farm.save();
+
+    console.log("📥 MATLAB fetched payload for farm:", farm._id);
+    res.json({
+      farmId: farm._id,
+      payload: farm.pushedPayload.data,
+    });
+  } catch (err) {
+    console.error("❌ Error in /api/poll-json:", err);
+    res.status(500).json({ error: "Failed to fetch payload" });
+  }
+});
+
+
+app.post("/api/push-json", async (req, res) => {
+  try {
+    const { farmId, payload } = req.body;
+    if (!farmId) return res.status(400).json({ error: "farmId is required" });
+
+    // ✅ If payload is not explicitly sent, use the farm data
+    const farm = await Farm.findById(farmId);
+    if (!farm) return res.status(404).json({ error: "Farm not found" });
+
+    const finalPayload = payload || farm.toObject();
+
+    const updatedFarm = await Farm.findByIdAndUpdate(
+      farmId,
+      {
+        $set: {
+          pushedPayload: {
+            data: finalPayload,
+            createdAt: new Date(),
+            readByMatlab: false,
+          },
+        },
+      },
+      { new: true }
+    );
+
+    console.log("📤 Payload pushed for MATLAB:", updatedFarm.pushedPayload);
+    res.json({ message: "Payload pushed successfully", farm: updatedFarm });
+  } catch (err) {
+    console.error("❌ Error in /api/push-json:", err);
+    res.status(500).json({ error: "Failed to push payload" });
+  }
+});
+
+app.post("/api/pending", async (req, res) => {
+  try {
+    const { farmId } = req.body;
+    if (!farmId) return res.status(400).json({ error: "farmId required" });
+
+    const farm = await Farm.findById(farmId);
+    if (!farm) return res.status(404).json({ error: "Farm not found" });
+
+    farm.status = "pending"; // add a status field in schema if not there
+    await farm.save();
+
+    res.json({ message: "Farm marked as pending" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
 
 /* =========================================================
    4️⃣  SERVER START

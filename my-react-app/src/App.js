@@ -162,27 +162,23 @@ function App() {
     setActiveTab("form");
   };
 
-  const handleSendData = async (farm) => {
+  const handleSendToMATLAB = async (farmId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/sendout`, {
+      const res = await fetch(`${API_BASE}/api/pending`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ farmId: farm._id }),
+        body: JSON.stringify({ farmId }),
       });
-
       const data = await res.json();
-
-      if (res.ok) {
-        alert(`MATLAB Simulation Complete!\nSent Data: ${JSON.stringify(data.sentData)}`);
-        fetchFarms(); // in case backend stored results
-      } else {
-        alert("Failed to send farm data!");
-      }
+      if (res.ok) alert(`Farm ${farmId} marked for MATLAB processing.`);
+      else alert(`Error: ${data.error}`);
     } catch (err) {
       console.error(err);
-      alert("Server error while sending farm data.");
+      alert("Server error while marking farm.");
     }
   };
+  
+  
 
   // --- Analytics computations (memoized) ---
   const analytics = useMemo(() => {

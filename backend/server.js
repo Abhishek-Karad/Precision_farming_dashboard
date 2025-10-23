@@ -3,9 +3,9 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 require("dotenv").config();
 const Farm = require("./models/Farm");
-const axios = require("axios");
 
 const app = express();
+
 const allowedOrigins = [
   'http://localhost:3000', // local React
   'https://precision-farming-dashboard.vercel.app' // production
@@ -16,6 +16,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
+
 app.use(express.json());
 
 // 🔗 MongoDB connection
@@ -74,36 +75,7 @@ app.delete("/api/farms/:id", async (req, res) => {
 });
 
 /* =========================================================
-   2️⃣  SENDOUT ROUTE (Frontend → MATLAB)
-========================================================= */
-
-app.post("/api/sendout", async (req, res) => {
-  try {
-    const { farmId } = req.body;
-    const farm = await Farm.findById(farmId);
-
-    if (!farm) return res.status(404).json({ error: "Farm not found" });
-
-    console.log("📤 Sending farm data to MATLAB:", farm);
-
-    // Optional: send data to MATLAB HTTP listener
-    /*
-    const matlabResponse = await axios.post("http://localhost:5001/matlab-endpoint", farm);
-    */
-
-    // Simulated placeholder response (MATLAB would later POST actual results)
-    res.json({
-      message: "Farm data sent to MATLAB successfully",
-      sentData: farm,
-    });
-  } catch (err) {
-    console.error("❌ Error in /api/sendout:", err);
-    res.status(500).json({ error: "Failed to send data to MATLAB" });
-  }
-});
-
-/* =========================================================
-   3️⃣  MATLAB RESULT CALLBACK (MATLAB → Node.js)
+   2️⃣  MATLAB RESULT CALLBACK (MATLAB → Node.js)
 ========================================================= */
 
 app.post("/api/matlab-results", async (req, res) => {
@@ -114,9 +86,7 @@ app.post("/api/matlab-results", async (req, res) => {
       return res.status(400).json({ error: "farmId is required" });
     }
 
-    console.log("📥 MATLAB results received:", req.body);
-
-    // Update the farm document
+    // Update the farm document with MATLAB results
     const updatedFarm = await Farm.findByIdAndUpdate(
       farmId,
       {
@@ -131,12 +101,14 @@ app.post("/api/matlab-results", async (req, res) => {
           },
         },
       },
-      { new: true } // Return the updated document
+      { new: true }
     );
 
     if (!updatedFarm) {
       return res.status(404).json({ error: "Farm not found" });
     }
+
+    console.log("📥 MATLAB results received:", req.body);
 
     res.json({
       message: "MATLAB results saved successfully",
@@ -148,6 +120,21 @@ app.post("/api/matlab-results", async (req, res) => {
   }
 });
 
+/* =========================================================
+   3️⃣  GET MATLAB RESULTS (Frontend)
+========================================================= */
+
+app.get("/api/farms/:id/matlab-results", async (req, res) => {
+  try {
+    const farm = await Farm.findById(req.params.id);
+    if (!farm) return res.status(404).json({ error: "Farm not found" });
+
+    res.json({ matlabResults: farm.matlabResults || null });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch MATLAB results" });
+  }
+});
 
 /* =========================================================
    4️⃣  SERVER START

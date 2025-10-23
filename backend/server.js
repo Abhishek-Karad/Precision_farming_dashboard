@@ -8,7 +8,8 @@ const app = express();
 
 const allowedOrigins = [
   'http://localhost:3000', // local React
-  'https://precision-farming-dashboard.vercel.app' // production
+  'https://precision-farming-dashboard.vercel.app',
+  "*" // production
 ];
 
 app.use(cors({
@@ -73,6 +74,41 @@ app.delete("/api/farms/:id", async (req, res) => {
     res.status(500).json({ error: "Error deleting farm" });
   }
 });
+
+const axios = require("axios"); // npm install axios
+
+app.post("/api/sendout", async (req, res) => {
+  try {
+    const { farmId } = req.body;
+    if (!farmId) return res.status(400).json({ error: "farmId is required" });
+
+    const farm = await Farm.findById(farmId);
+    if (!farm) return res.status(404).json({ error: "Farm not found" });
+
+    // Send farm data to your backend URL (or MATLAB endpoint)
+    const backendUrl = "https://precision-farming-dashboard-2.onrender.com/api/matlab-results";
+
+    const response = await axios.post(backendUrl, {
+      farmId: farm._id,
+      length: farm.length,
+      width: farm.width,
+      farmingStyle: farm.farmingStyle,
+      farmType: farm.farmType,
+      soilType: farm.soilType,
+      temperature: farm.temperature,
+      humidity: farm.humidity,
+      rainfall: farm.rainfall,
+      wind: farm.wind,
+      sprayType: farm.sprayType,
+    });
+
+    res.json({ message: "Farm data sent successfully!", sentData: farm });
+  } catch (err) {
+    console.error("❌ Error sending farm data:", err.message);
+    res.status(500).json({ error: "Failed to send farm data" });
+  }
+});
+
 
 /* =========================================================
    2️⃣  MATLAB RESULT CALLBACK (MATLAB → Node.js)

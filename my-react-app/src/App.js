@@ -426,7 +426,8 @@ function App() {
                             <div className="farm-actions">
                               <button className="btn btn-ghost" onClick={() => handleEdit(farm)}>Edit</button>
                               <button className="btn" onClick={() => handleDelete(farm._id)} style={{ background: "#fff2f2", border: "1px solid #fed7d7", color: "#c53030" }}>Delete</button>
-                              <button className="btn btn-primary" onClick={() => handleSendData(farm)}>Send</button>
+                              <button className="btn btn-primary" onClick={() => handleSendToMATLAB(farm._id)}>Send</button>
+
                             </div>
 
                             {farm.matlabResults ? (

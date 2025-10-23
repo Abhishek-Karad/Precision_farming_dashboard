@@ -75,6 +75,22 @@ app.delete("/api/farms/:id", async (req, res) => {
   }
 });
 
+app.get("/api/farms/:id", async (req, res) => { 
+  try {
+    const farm = await Farm.findById(req.params.id);
+    if (!farm) return res.status(404).json({ error: "Farm not found" });
+    res.json(farm);  // ✅ This is what MATLAB fetchFarmData uses
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error fetching farm" });
+  }
+});
+
+
+
+
+
+
 const axios = require("axios"); // npm install axios
 
 app.post("/api/sendout", async (req, res) => {

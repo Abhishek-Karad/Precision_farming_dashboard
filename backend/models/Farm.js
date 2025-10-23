@@ -11,6 +11,15 @@ const FarmSchema = new mongoose.Schema({
   rainfall: Number,
   wind: Number,
   sprayType: String,
+
+  // MATLAB integration
+  pushedPayload: {
+    data: Object,        // stores the farm data to process
+    createdAt: Date,
+    readByMatlab: { type: Boolean, default: false }
+  },
+  status: { type: String, default: "new" }, // new / pending / processing / completed
+
   matlabResults: {
     sprayEfficiency: Number,
     coverage: Number,
@@ -20,6 +29,5 @@ const FarmSchema = new mongoose.Schema({
     receivedAt: Date
   }
 });
-
 
 module.exports = mongoose.model("Farm", FarmSchema);

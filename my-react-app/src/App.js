@@ -10,6 +10,36 @@ const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8888";
 
 const COLORS = ["#2c7a7b", "#68d391", "#f6ad55", "#63b3ed", "#9f7aea", "#f56565"];
 
+
+
+
+
+const StatusBadge = ({ status }) => {
+  const statusConfig = {
+    draft: { bg: "#f7fafc", color: "#718096", text: "Draft" },
+    pending: { bg: "#fef5e7", color: "#d69e2e", text: "⏳ Pending" },
+    processing: { bg: "#e6f7ff", color: "#1890ff", text: "🔄 Processing" },
+    completed: { bg: "#f0fff4", color: "#2f855a", text: "✅ Completed" },
+    failed: { bg: "#fff2f2", color: "#c53030", text: "❌ Failed" }
+  };
+
+  const config = statusConfig[status] || statusConfig.draft;
+
+  return (
+    <div style={{
+      display: "inline-block",
+      padding: "4px 10px",
+      borderRadius: "6px",
+      background: config.bg,
+      color: config.color,
+      fontSize: "12px",
+      fontWeight: "700"
+    }}>
+      {config.text}
+    </div>
+  );
+};
+
 function App() {
   // UI state
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard | form | analytics
@@ -164,20 +194,40 @@ function App() {
 
   const handleSendToMATLAB = async (farmId) => {
     try {
-      const res = await fetch(`${API_BASE}/api/pending`, {
+      // First, mark farm as pending
+      const pendingRes = await fetch(`${API_BASE}/api/pending`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ farmId }),
       });
-      const data = await res.json();
-      if (res.ok) alert(`Farm ${farmId} marked for MATLAB processing.`);
-      else alert(`Error: ${data.error}`);
+      
+      if (!pendingRes.ok) {
+        const errData = await pendingRes.json();
+        alert(`Error marking farm as pending: ${errData.error}`);
+        return;
+      }
+  
+      // Then, push the payload for MATLAB to poll
+      const pushRes = await fetch(`${API_BASE}/api/push-json`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ farmId }),
+      });
+  
+      const data = await pushRes.json();
+      
+      if (pushRes.ok) {
+        alert(`✅ Farm ${farmId} queued for MATLAB processing!\n\nMATLAB will pick it up on the next poll cycle.`);
+        // Refresh farms to show updated status
+        fetchFarms();
+      } else {
+        alert(`❌ Error: ${data.error}`);
+      }
     } catch (err) {
       console.error(err);
-      alert("Server error while marking farm.");
+      alert("⚠️ Server error while queuing farm for MATLAB.");
     }
   };
-  
   
 
   // --- Analytics computations (memoized) ---

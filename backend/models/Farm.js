@@ -1,23 +1,32 @@
 const mongoose = require("mongoose");
 
 const FarmSchema = new mongoose.Schema({
-  length: Number,
-  width: Number,
-  farmingStyle: String,
-  farmType: String,
-  soilType: String,
-  temperature: Number,
-  humidity: Number,
-  rainfall: Number,
-  wind: Number,
-  sprayType: String,
+  farmid: { type: String, required: true },           
+  farm_name: { type: String },                        
+  farm_area: { type: Number },                       
+  shape: { type: String },                            
+  size_fragmentation: { type: String },               
+  level: { type: String },                           
+  boundary: { type: String },                         
+  style: { type: String },                            
+  cropping_pattern: { type: String },                 
+  obstacle_density: { type: Number },                 
+  soil_type: { type: String },                        
+  chemical_mix: { type: String },                     
+  temp: { type: Number },                            
+  organic_matter: { type: String },                   
+  spray_type: { type: String },                       
+  coverage: { type: String },                        
+  effectiveness: { type: String },                    
+  suggested_volume: { type: String },                
 
-  // MATLAB integration
+  // Optional tracking / integration fields
   pushedPayload: {
-    data: Object,        // stores the farm data to process
-    createdAt: Date,
-    readByMatlab: { type: Boolean, default: false }
+    data: Object,
+    createdAt: { type: Date, default: Date.now },
+    readByMatlab: { type: Boolean, default: false },
   },
+
   status: { type: String, default: "new" }, // new / pending / processing / completed
 
   matlabResults: {
@@ -26,8 +35,8 @@ const FarmSchema = new mongoose.Schema({
     bestAlgorithm: String,
     recommendedFormula: String,
     imagePath: String,
-    receivedAt: Date
-  }
+    receivedAt: Date,
+  },
 });
 
 module.exports = mongoose.model("Farm", FarmSchema);

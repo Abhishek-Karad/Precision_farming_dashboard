@@ -43,10 +43,10 @@ app.post("/api/farms", async (req, res) => {
   }
 });
 
-// READ all farms
+// READ all farms - clean output for frontend
 app.get("/api/farms", async (req, res) => {
   try {
-    const farms = await Farm.find();
+    const farms = await Farm.find({}, { __v: 0 }).sort({ createdAt: -1 });
     res.json(farms);
   } catch (err) {
     console.error(err);
@@ -89,7 +89,7 @@ app.get("/api/farms/:id", async (req, res) => {
 });
 
 /* =========================================================
-   2️⃣  MATLAB INTEGRATION ROUTES - IMPROVED ✨
+   2️⃣  MATLAB INTEGRATION ROUTES - IMPROVED 
 ========================================================= */
 
 // 🔄 IMPROVEMENT 1: Combined endpoint to mark pending AND queue for MATLAB
@@ -105,11 +105,11 @@ app.post("/api/pending", async (req, res) => {
     farm.status = "pending";
     await farm.save();
 
-    console.log(`✅ Farm ${farmId} marked as pending`); // ✨ IMPROVED: Better logging
+    console.log(`✅ Farm ${farmId} marked as pending`); //  IMPROVED: Better logging
 
     res.json({ message: "Farm marked as pending", farm });
   } catch (err) {
-    console.error("❌ Error in /api/pending:", err); // ✨ IMPROVED: Better error logging
+    console.error("❌ Error in /api/pending:", err); //  IMPROVED: Better error logging
     res.status(500).json({ error: err.message });
   }
 });
@@ -285,6 +285,79 @@ app.post("/api/sendout", async (req, res) => {
     res.status(500).json({ error: "Failed to send farm data" });
   }
 });
+
+//Chatbot assistant
+const { GoogleGenerativeAI } = require("@google/generative-ai");
+const fetch = require("node-fetch");
+
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// 🕸️ Simple free web search using DuckDuckGo API
+async function webSearch(query) {
+  try {
+    const searchUrl = `https://api.duckduckgo.com/?q=${encodeURIComponent(
+      query
+    )}&format=json&no_html=1&skip_disambig=1`;
+    const res = await fetch(searchUrl);
+    const data = await res.json();
+
+    // Extract a short text snippet
+    const text =
+      data.AbstractText ||
+      (data.RelatedTopics && data.RelatedTopics[0]?.Text) ||
+      "No reliable web summary available.";
+    return text;
+  } catch {
+    return "Unable to retrieve web context.";
+  }
+}
+
+// 🎯 Route: POST /api/gemini-query
+app.post("/api/gemini-query", async (req, res) => {
+  try {
+    const { query, context } = req.body;
+
+    // 1️⃣ Get web context
+    const webContext = await webSearch(query);
+
+    // 2️⃣ Ask Gemini
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+    const prompt = `
+You are an AI assistant strictly focused on the following domain:
+"${context || "agriculture"}".
+
+You must always stay within this domain. 
+If the user's query is outside this context, reply with: 
+"Out of context."
+
+Use only reliable knowledge and the recent web snippet below to answer concisely.
+
+=== WEB CONTEXT ===
+${webContext}
+
+=== USER QUESTION ===
+${query}
+`;
+
+    const result = await model.generateContent(prompt);
+    const answer = await result.response.text();
+
+    res.json({ answer });
+  } catch (err) {
+    console.error("❌ Error in /api/gemini-query:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+
+
+
+
+
+
+
+
 
 /* =========================================================
    3️⃣  SERVER START

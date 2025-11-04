@@ -2,8 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line, CartesianGrid,
 } from "recharts";
-
-const API_BASE = "http://localhost:8888";
+const API_BASE = process.env.REACT_APP_API_BASE || "http://localhost:8888";
 const COLORS = ["#0F766E", "#14B8A6", "#2DD4BF", "#5EEAD4", "#99F6E4", "#CCFBF1"];
 
 const StatusBadge = ({ status }) => {

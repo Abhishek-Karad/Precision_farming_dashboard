@@ -312,9 +312,9 @@ function App() {
 
           <nav style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginBottom: "auto" }}>
             {[
-              { id: "dashboard", label: "Dashboard", icon: "📊" },
-              { id: "form", label: "Farm Entry", icon: "📝" },
-              { id: "analytics", label: "Analytics", icon: "📈" }
+              { id: "dashboard", label: "Dashboard", icon: "" },
+              { id: "form", label: "Farm Entry", icon: "" },
+              { id: "analytics", label: "Analytics", icon: "" }
             ].map(tab => (
               <button
                 key={tab.id}
